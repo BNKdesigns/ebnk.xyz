@@ -451,7 +451,6 @@
         function loadChannel(index) {
             if (CHANNELS.length === 0) return;
 
-            // Handle Circular wrapping
             if (index < 0) index = CHANNELS.length - 1;
             if (index >= CHANNELS.length) index = 0;
             
@@ -515,65 +514,49 @@
             }
         }
 
-        // --- KEY HANDLER (UPDATED) ---
+        // --- KEY HANDLER ---
         document.addEventListener('keydown', (e) => {
             const k = e.keyCode;
-            const keyName = e.key; // Fallback check for "ChannelUp" etc.
             
-            console.log("Key:", k, keyName);
-
-            // BUTTON DEFINITIONS
-            const IS_ARROW_UP = (k === 38 || k === 29460);
-            const IS_ARROW_DOWN = (k === 40 || k === 29461);
-            const IS_CH_UP = (k === 427 || keyName === 'ChannelUp');
-            const IS_CH_DOWN = (k === 428 || keyName === 'ChannelDown');
+            // KEY MAPPINGS
+            const ARROW_UP = (k === 38 || k === 29460);
+            const ARROW_DOWN = (k === 40 || k === 29461);
+            const CH_UP = (k === 427);   // Channel Up / Next
+            const CH_DOWN = (k === 428); // Channel Down / Previous
             const LEFT = (k === 37 || k === 4);
             const RIGHT = (k === 39 || k === 5);
             const ENTER = (k === 13);
             const BACK = (k === 10009 || k === 461 || k === 8);
 
             if (isGuideOpen) {
-                // GUIDE MODE:
-                // Up Arrow -> Previous Item (Up in list)
-                // Down Arrow -> Next Item (Down in list)
-                // Channel Keys -> Page Jump (Standard behavior: CH+ goes Next Page/Item)
-                
-                if (IS_ARROW_UP) {
+                // GUIDE NAVIGATION:
+                // Up moves to previous item in list (Standard List Logic)
+                // Down moves to next item in list
+                if (ARROW_UP || CH_UP) {
                     currentIndex--; 
                     if (currentIndex < 0) currentIndex = CHANNELS.length - 1;
                     updateGuideFocus();
-                } else if (IS_ARROW_DOWN) {
+                } else if (ARROW_DOWN || CH_DOWN) {
                     currentIndex++;
                     if (currentIndex >= CHANNELS.length) currentIndex = 0;
                     updateGuideFocus();
-                } 
-                // Treat Channel Buttons same as Arrows in guide for simplicity
-                else if (IS_CH_UP) {
-                    currentIndex++; // Ch+ goes forward
-                    if (currentIndex >= CHANNELS.length) currentIndex = 0;
-                    updateGuideFocus();
-                }
-                else if (IS_CH_DOWN) {
-                    currentIndex--; // Ch- goes backward
-                    if (currentIndex < 0) currentIndex = CHANNELS.length - 1;
-                    updateGuideFocus();
-                }
-                else if (ENTER || RIGHT) {
+                } else if (ENTER || RIGHT) {
                     loadChannel(currentIndex);
                     toggleGuide();
                 } else if (BACK || LEFT) {
                     toggleGuide();
                 }
             } else {
-                // FULLSCREEN MODE (ZAPPING):
-                
-                // REQUEST: Arrow Up OR Channel Up -> NEXT Channel
-                if (IS_ARROW_UP || IS_CH_UP) {
-                    loadChannel(currentIndex + 1); 
+                // FULLSCREEN ZAPPING (User Request):
+                // UP Button = Next Channel (Index + 1)
+                // Next Channel Button = Next Channel (Index + 1)
+                if (ARROW_UP || CH_UP) {
+                    loadChannel(currentIndex + 1); // NEXT CHANNEL
                 } 
-                // REQUEST: Arrow Down OR Channel Down -> PREVIOUS Channel
-                else if (IS_ARROW_DOWN || IS_CH_DOWN) {
-                    loadChannel(currentIndex - 1); 
+                // DOWN Button = Previous Channel (Index - 1)
+                // Previous Channel Button = Previous Channel (Index - 1)
+                else if (ARROW_DOWN || CH_DOWN) {
+                    loadChannel(currentIndex - 1); // PREVIOUS CHANNEL
                 } 
                 else if (ENTER || RIGHT || LEFT) {
                     toggleGuide();
