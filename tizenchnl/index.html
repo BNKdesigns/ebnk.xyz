@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WebChnl TV</title>
-    <!-- Tizen Web API for Remote Control Access -->
+    <title>webchnl Tizen Edition</title>
+    <link rel="icon" type="image/svg+xml" href="https://webchnl.com/assets/svg/webchnl_icon.svg">
+    
+    <!-- Tizen Web API -->
     <script type="text/javascript" src="$WEBAPIS/webapis/webapis.js"></script>
+    
+    <!-- HLS.js for .m3u8 playback support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <style>
         /* --- CORE TV STYLES --- */
         body {
-            background-color: #000;
-            color: #fff;
-            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -37,12 +43,13 @@
             justify-content: center;
             align-items: center;
             background: #000;
+            z-index: 1;
         }
 
         #video-player {
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Ensures video fits screen */
+            object-fit: contain;
             background: #000;
         }
 
@@ -52,155 +59,210 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 40px 60px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            height: 180px;
+            padding: 0 60px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
             display: flex;
-            justify-content: flex-start; /* Align items to left */
+            justify-content: flex-start;
             align-items: center;
             box-sizing: border-box;
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             z-index: 20;
+            pointer-events: none;
         }
 
-        /* Channel Logo in OSD */
         #ch-logo {
-            height: 80px;
-            max-width: 150px;
+            height: 90px;
+            width: 90px;
             object-fit: contain;
             margin-right: 30px;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            /* UPDATED: Black Background */
+            background: #000000; 
+            border-radius: 18px;
+            padding: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .channel-info {
             display: flex;
             flex-direction: column;
-            flex: 1;
+            justify-content: center;
         }
 
         #ch-number {
-            font-size: 3rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            color: #00aaff;
-            margin-bottom: 5px;
-            line-height: 1;
+            /* UPDATED: Gray Color */
+            color: #888888; 
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         #ch-name {
-            font-size: 2rem;
-            font-weight: 400;
-            color: #eee;
-            line-height: 1.2;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.1;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
 
         #clock {
-            font-size: 1.5rem;
-            color: #ccc;
-            font-weight: 300;
-            margin-left: auto; /* Push to right */
+            font-size: 1.6rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            margin-left: auto;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
         }
 
         /* --- GUIDE OVERLAY --- */
         #guide-overlay {
             position: absolute;
-            left: -450px;
+            left: -480px;
             top: 0;
-            width: 400px;
+            width: 450px;
             height: 100%;
-            background: rgba(20, 20, 20, 0.95);
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+            background: rgba(30, 30, 30, 0.95); 
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.8);
             z-index: 30;
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1);
             display: flex;
             flex-direction: column;
             transform: translateX(0);
         }
 
         #guide-overlay.visible {
-            transform: translateX(450px);
+            transform: translateX(480px);
         }
 
         .guide-header {
-            padding: 30px;
-            font-size: 1.8rem;
-            font-weight: 600;
-            border-bottom: 1px solid #333;
-            color: #fff;
-            background: #111;
+            padding: 40px 30px 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+            background: transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .guide-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
         }
 
         #channel-list {
             flex: 1;
             overflow-y: auto;
-            padding: 10px 0;
+            padding: 10px 15px;
+            scroll-behavior: smooth;
         }
 
         #channel-list::-webkit-scrollbar { display: none; }
 
         .channel-item {
-            padding: 15px 30px;
-            font-size: 1.3rem;
-            color: #aaa;
-            border-left: 6px solid transparent;
+            padding: 18px 25px;
+            margin: 5px 0;
+            font-size: 1.4rem;
+            color: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            transition: all 0.2s;
+            transition: all 0.2s ease-out;
+            border: 2px solid transparent;
         }
 
         .channel-item span.num {
-            width: 50px;
-            font-weight: 700;
-            color: #666;
+            width: 60px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .channel-item.focused {
-            background-color: #00aaff;
+            /* Keep the Red Accent for focus bg/border */
+            background-color: rgba(244, 39, 40, 0.15);
             color: #fff;
-            border-left: 6px solid #fff;
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border-color: #F42728;
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             z-index: 2;
         }
 
-        .channel-item.focused span.num { color: #fff; }
+        .channel-item.focused span.num { 
+            color: #fff; 
+        }
 
         /* --- LOADING SPINNER --- */
         #loading {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: #00aaff;
-            font-size: 1.5rem;
+            z-index: 10;
             display: none;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: #F42728;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px auto;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         /* --- FOOTER INSTRUCTIONS --- */
         #footer-controls {
             position: absolute;
-            bottom: 30px;
-            right: 40px;
+            bottom: 40px;
+            right: 50px;
             display: flex;
-            gap: 20px;
+            gap: 15px;
             z-index: 20;
-            opacity: 0.7;
+            opacity: 0.6;
+            transition: opacity 0.3s;
         }
+
+        /* UPDATED: Opacity 0 to make it invisible */
+        #footer-controls.faded { opacity: 0; }
 
         .control-hint {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 1rem;
-            background: rgba(0,0,0,0.6);
-            padding: 8px 15px;
-            border-radius: 20px;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .key-icon {
-            border: 1px solid #fff;
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            min-width: 24px;
+            text-align: center;
         }
     </style>
 </head>
@@ -208,28 +270,32 @@
 
     <div id="app-container">
         
-        <!-- Video Player (Replaces IMG) -->
         <div id="video-container">
-            <video id="video-player" autoplay playsinline webkit-playsinline></video>
+            <video id="video-player" crossorigin="anonymous" playsinline webkit-playsinline></video>
         </div>
 
-        <div id="loading">Loading Channels...</div>
+        <div id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading Channels</div>
+        </div>
 
         <!-- Top Information Bar (OSD) -->
         <div id="osd-bar">
             <!-- Channel Logo -->
-            <img id="ch-logo" src="" alt="" onerror="this.style.display='none'">
+            <img id="ch-logo" src="" alt="" onerror="this.style.opacity='0'">
             
             <div class="channel-info">
                 <span id="ch-number">000</span>
-                <span id="ch-name">Loading...</span>
+                <span id="ch-name">Connecting...</span>
             </div>
             <div id="clock">12:00 PM</div>
         </div>
 
         <!-- Guide Overlay -->
         <div id="guide-overlay">
-            <div class="guide-header">Channels</div>
+            <div class="guide-header">
+                <img src="https://webchnl.com/assets/svg/webchnl_full.svg" alt="WebChnl" class="guide-logo">
+            </div>
             <div id="channel-list"></div>
         </div>
 
@@ -245,7 +311,8 @@
     <script>
         // --- CONFIG ---
         const API_URL = "https://webchnl.com/api/channels.php";
-        let CHANNELS = []; // Populated via API
+        let CHANNELS = [];
+        let hls = null;
 
         // --- APP STATE ---
         let currentIndex = 0;
@@ -262,15 +329,19 @@
             guide: document.getElementById('guide-overlay'),
             list: document.getElementById('channel-list'),
             clock: document.getElementById('clock'),
-            loading: document.getElementById('loading')
+            loading: document.getElementById('loading'),
+            footer: document.getElementById('footer-controls')
         };
 
         // --- INIT ---
         window.onload = () => {
             initTizen();
-            fetchChannels();
+            fetchChannels(false); // Initial load
             updateClock();
             setInterval(updateClock, 60000);
+            
+            // UPDATED: Background update every 30 seconds
+            setInterval(() => fetchChannels(true), 30000);
         };
 
         function initTizen() {
@@ -287,8 +358,9 @@
         }
 
         // --- DATA FETCHING ---
-        function fetchChannels() {
-            els.loading.style.display = 'block';
+        function fetchChannels(isBackground = false) {
+            // Only show loader on initial load
+            if (!isBackground) els.loading.style.display = 'block';
             
             fetch(API_URL)
                 .then(response => {
@@ -296,28 +368,37 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Normalize Data: Adapt to whatever keys the API uses
                     CHANNELS = data.map((c, i) => ({
                         id: (i + 1).toString().padStart(3, '0'),
-                        // Check common keys for name, logo, and stream
-                        name: c.name || c.title || c.channel_name || "Unknown Channel",
-                        logo: c.logo || c.icon || c.image || c.img || c.src || "", 
-                        stream: c.stream || c.url || c.file || c.m3u8 || c.source || ""
+                        name: c.name || "Unknown Channel",
+                        logo: c.logo_url || "", 
+                        stream: c.stream_url || ""
                     }));
 
-                    els.loading.style.display = 'none';
+                    if (!isBackground) els.loading.style.display = 'none';
                     
                     if (CHANNELS.length > 0) {
+                        // Validate current index in case channel count shrunk
+                        if (currentIndex >= CHANNELS.length) currentIndex = 0;
+
                         buildGuide();
-                        loadChannel(0);
+                        
+                        if (!isBackground) {
+                            loadChannel(0); // Play first channel on startup
+                        } else {
+                            // If guide is open during update, refresh the highlight
+                            if (isGuideOpen) updateGuideFocus();
+                        }
                     } else {
-                        els.chName.innerText = "No Channels Found";
+                        if (!isBackground) els.chName.innerText = "No Channels Found";
                     }
                 })
                 .catch(err => {
                     console.error("Fetch Error:", err);
-                    els.loading.innerText = "Error Loading Channels";
-                    els.chName.innerText = "Connection Failed";
+                    // Only show error text if it's the initial load
+                    if (!isBackground) {
+                        els.loading.innerHTML = "<div class='loading-text'>Connection Failed</div>";
+                    }
                 });
         }
 
@@ -331,42 +412,73 @@
             CHANNELS.forEach((ch, idx) => {
                 const item = document.createElement('div');
                 item.className = 'channel-item';
-                // Only show Number and Name in guide to keep it clean
                 item.innerHTML = `<span class="num">${ch.id}</span> <span class="name">${ch.name}</span>`;
                 item.dataset.index = idx;
                 els.list.appendChild(item);
             });
         }
 
+        // --- STREAMING LOGIC ---
+        function playStream(url) {
+            const video = els.video;
+
+            if (Hls.isSupported()) {
+                if (hls) {
+                    hls.destroy();
+                }
+                hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    video.play().catch(e => console.log("Auto-play prevented", e));
+                });
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play().catch(e => console.log("Auto-play prevented", e));
+                });
+            }
+        }
+
         // --- NAVIGATION LOGIC ---
         function loadChannel(index) {
             if (CHANNELS.length === 0) return;
 
-            // Circular navigation
             if (index < 0) index = CHANNELS.length - 1;
             if (index >= CHANNELS.length) index = 0;
             
             currentIndex = index;
             const ch = CHANNELS[currentIndex];
 
-            // Update Video
             if (ch.stream) {
-                els.video.src = ch.stream;
-                els.video.play().catch(e => console.log("Autoplay blocked or failed:", e));
-            } else {
-                console.warn("No stream URL for channel:", ch.name);
+                playStream(ch.stream);
             }
 
-            // Update OSD Info
             els.chNum.innerText = ch.id;
             els.chName.innerText = ch.name;
             
-            // Update Logo
             if (ch.logo) {
                 els.chLogo.src = ch.logo;
+                els.chLogo.style.opacity = '1';
                 els.chLogo.style.display = 'block';
             } else {
-                els.chLogo.style.display = 'none';
+                els.chLogo.style.opacity = '0';
+                setTimeout(() => els.chLogo.style.display = 'none', 300);
             }
 
             showOSD();
@@ -375,10 +487,15 @@
 
         function showOSD() {
             els.osd.style.opacity = '1';
+            els.footer.classList.remove('faded');
             clearTimeout(osdTimeout);
+            
             osdTimeout = setTimeout(() => {
-                if (!isGuideOpen) els.osd.style.opacity = '0';
-            }, 4000);
+                if (!isGuideOpen) {
+                    els.osd.style.opacity = '0';
+                    els.footer.classList.add('faded');
+                }
+            }, 5000); // UPDATED: 5 seconds
         }
 
         function toggleGuide() {
@@ -386,6 +503,7 @@
             if (isGuideOpen) {
                 els.guide.classList.add('visible');
                 els.osd.style.opacity = '1'; 
+                els.footer.classList.remove('faded');
                 updateGuideFocus();
             } else {
                 els.guide.classList.remove('visible');
@@ -407,8 +525,6 @@
         // --- KEY HANDLER ---
         document.addEventListener('keydown', (e) => {
             const k = e.keyCode;
-            
-            // MAPPING
             const UP = (k === 38 || k === 29460 || k === 427);
             const DOWN = (k === 40 || k === 29461 || k === 428);
             const LEFT = (k === 37 || k === 4);
