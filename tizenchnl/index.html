@@ -525,14 +525,14 @@
         // --- KEY HANDLER ---
         document.addEventListener('keydown', (e) => {
             const k = e.keyCode;
-            const UP = (k === 38 || k === 29460 || k === 427);
-            const DOWN = (k === 40 || k === 29461 || k === 428);
+            const DOWN = (k === 38 || k === 29460 || k === 427);
+            const UP = (k === 40 || k === 29461 || k === 428);
             const LEFT = (k === 37 || k === 4);
             const RIGHT = (k === 39 || k === 5);
             const ENTER = (k === 13);
             const BACK = (k === 10009 || k === 461 || k === 8);
-            const CH_UP = (k === 427);
-            const CH_DOWN = (k === 428);
+            const CH_DOWN = (k === 427);
+            const CH_UP = (k === 428);
 
             if (isGuideOpen) {
                 if (UP) {
