@@ -77,7 +77,6 @@
             width: 90px;
             object-fit: contain;
             margin-right: 30px;
-            /* UPDATED: Black Background */
             background: #000000; 
             border-radius: 18px;
             padding: 10px;
@@ -94,7 +93,6 @@
         #ch-number {
             font-size: 1.8rem;
             font-weight: 700;
-            /* UPDATED: Gray Color */
             color: #888888; 
             margin-bottom: 4px;
             letter-spacing: 1px;
@@ -185,7 +183,6 @@
         }
 
         .channel-item.focused {
-            /* Keep the Red Accent for focus bg/border */
             background-color: rgba(244, 39, 40, 0.15);
             color: #fff;
             border-color: #F42728;
@@ -239,7 +236,6 @@
             transition: opacity 0.3s;
         }
 
-        /* UPDATED: Opacity 0 to make it invisible */
         #footer-controls.faded { opacity: 0; }
 
         .control-hint {
@@ -336,11 +332,11 @@
         // --- INIT ---
         window.onload = () => {
             initTizen();
-            fetchChannels(false); // Initial load
+            fetchChannels(false);
             updateClock();
             setInterval(updateClock, 60000);
             
-            // UPDATED: Background update every 30 seconds
+            // Background update every 30 seconds
             setInterval(() => fetchChannels(true), 30000);
         };
 
@@ -359,7 +355,6 @@
 
         // --- DATA FETCHING ---
         function fetchChannels(isBackground = false) {
-            // Only show loader on initial load
             if (!isBackground) els.loading.style.display = 'block';
             
             fetch(API_URL)
@@ -378,15 +373,13 @@
                     if (!isBackground) els.loading.style.display = 'none';
                     
                     if (CHANNELS.length > 0) {
-                        // Validate current index in case channel count shrunk
                         if (currentIndex >= CHANNELS.length) currentIndex = 0;
 
                         buildGuide();
                         
                         if (!isBackground) {
-                            loadChannel(0); // Play first channel on startup
+                            loadChannel(0); 
                         } else {
-                            // If guide is open during update, refresh the highlight
                             if (isGuideOpen) updateGuideFocus();
                         }
                     } else {
@@ -395,7 +388,6 @@
                 })
                 .catch(err => {
                     console.error("Fetch Error:", err);
-                    // Only show error text if it's the initial load
                     if (!isBackground) {
                         els.loading.innerHTML = "<div class='loading-text'>Connection Failed</div>";
                     }
@@ -459,6 +451,7 @@
         function loadChannel(index) {
             if (CHANNELS.length === 0) return;
 
+            // Handle Circular wrapping
             if (index < 0) index = CHANNELS.length - 1;
             if (index >= CHANNELS.length) index = 0;
             
@@ -495,7 +488,7 @@
                     els.osd.style.opacity = '0';
                     els.footer.classList.add('faded');
                 }
-            }, 5000); // UPDATED: 5 seconds
+            }, 5000); 
         }
 
         function toggleGuide() {
@@ -522,41 +515,70 @@
             }
         }
 
-        // --- KEY HANDLER ---
+        // --- KEY HANDLER (UPDATED) ---
         document.addEventListener('keydown', (e) => {
             const k = e.keyCode;
-            const UP = (k === 38 || k === 29460 || k === 427);
-            const DOWN = (k === 40 || k === 29461 || k === 428);
+            const keyName = e.key; // Fallback check for "ChannelUp" etc.
+            
+            console.log("Key:", k, keyName);
+
+            // BUTTON DEFINITIONS
+            const IS_ARROW_UP = (k === 38 || k === 29460);
+            const IS_ARROW_DOWN = (k === 40 || k === 29461);
+            const IS_CH_UP = (k === 427 || keyName === 'ChannelUp');
+            const IS_CH_DOWN = (k === 428 || keyName === 'ChannelDown');
             const LEFT = (k === 37 || k === 4);
             const RIGHT = (k === 39 || k === 5);
             const ENTER = (k === 13);
             const BACK = (k === 10009 || k === 461 || k === 8);
-            const CH_UP = (k === 427);
-            const CH_DOWN = (k === 428);
 
             if (isGuideOpen) {
-                if (UP) {
-                    currentIndex--;
+                // GUIDE MODE:
+                // Up Arrow -> Previous Item (Up in list)
+                // Down Arrow -> Next Item (Down in list)
+                // Channel Keys -> Page Jump (Standard behavior: CH+ goes Next Page/Item)
+                
+                if (IS_ARROW_UP) {
+                    currentIndex--; 
                     if (currentIndex < 0) currentIndex = CHANNELS.length - 1;
                     updateGuideFocus();
-                } else if (DOWN) {
+                } else if (IS_ARROW_DOWN) {
                     currentIndex++;
                     if (currentIndex >= CHANNELS.length) currentIndex = 0;
                     updateGuideFocus();
-                } else if (ENTER || RIGHT) {
+                } 
+                // Treat Channel Buttons same as Arrows in guide for simplicity
+                else if (IS_CH_UP) {
+                    currentIndex++; // Ch+ goes forward
+                    if (currentIndex >= CHANNELS.length) currentIndex = 0;
+                    updateGuideFocus();
+                }
+                else if (IS_CH_DOWN) {
+                    currentIndex--; // Ch- goes backward
+                    if (currentIndex < 0) currentIndex = CHANNELS.length - 1;
+                    updateGuideFocus();
+                }
+                else if (ENTER || RIGHT) {
                     loadChannel(currentIndex);
                     toggleGuide();
                 } else if (BACK || LEFT) {
                     toggleGuide();
                 }
             } else {
-                if (UP || CH_UP) {
-                    loadChannel(currentIndex + 1);
-                } else if (DOWN || CH_DOWN) {
-                    loadChannel(currentIndex - 1);
-                } else if (ENTER || RIGHT || LEFT) {
+                // FULLSCREEN MODE (ZAPPING):
+                
+                // REQUEST: Arrow Up OR Channel Up -> NEXT Channel
+                if (IS_ARROW_UP || IS_CH_UP) {
+                    loadChannel(currentIndex + 1); 
+                } 
+                // REQUEST: Arrow Down OR Channel Down -> PREVIOUS Channel
+                else if (IS_ARROW_DOWN || IS_CH_DOWN) {
+                    loadChannel(currentIndex - 1); 
+                } 
+                else if (ENTER || RIGHT || LEFT) {
                     toggleGuide();
-                } else if (BACK) {
+                } 
+                else if (BACK) {
                     try { tizen.application.getCurrentApplication().exit(); } catch(err){}
                 }
             }
