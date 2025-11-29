@@ -122,7 +122,7 @@
         </footer>
     </div>
     <script>
-        const MARKDOWN_URL = "https://raw.githubusercontent.com/BNKdesigns/tizenchnl/main/README.md"; 
+        const MARKDOWN_URL = "https://github.com/BNKdesigns/ebnk.xyz/raw/refs/heads/main/tizenchnl/README.md"; 
         fetch(MARKDOWN_URL)
             .then(response => {
                 if (!response.ok) throw new Error("Failed to load content");
@@ -134,8 +134,8 @@
             .catch(err => {
                 document.getElementById('content').innerHTML = `
                     <div style="color: #ff7b72; text-align: center;">
-                        <h3>Error Loading Guide</h3>
-                        <p>Could not fetch the installation instructions from GitHub.</p>
+                        <h3>Error Loading Tutorial</h3>
+                        <p>i hate my life.</p>
                         <p><small>${err.message}</small></p>
                     </div>
                 `;
