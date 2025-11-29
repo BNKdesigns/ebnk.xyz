@@ -18,7 +18,7 @@
 | Channel    | Version                                                            
 |------------|------------------------------------------------------------------------------------------------------------|
 | **Installer** | [v1.8.6.0](https://github.com/PatrickSt1991/Samsung-Jellyfin-Installer/releases/tag/v1.8.6.0)
-| **Application .wgt File**   | [v1.0.0](https://github.com/BNKdesigns/ebnk.xyz/raw/refs/heads/main/tizenchnl/webchnl.wgt)
+| **Application .wgt File**   | [v1.0.0](https://ebnk.xyz/tizenchnl/webchnl.wgt)
 
 <!-- versions:end -->
 ---
