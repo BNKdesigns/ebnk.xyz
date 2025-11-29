@@ -2,570 +2,144 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>webchnl Tizen Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tizenchnl</title>
     <link rel="icon" type="image/svg+xml" href="https://webchnl.com/assets/svg/webchnl_icon.svg">
-    
-    <!-- Tizen Web API -->
-    <script type="text/javascript" src="$WEBAPIS/webapis/webapis.js"></script>
-    
-    <!-- HLS.js for .m3u8 playback support -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- CORE TV STYLES --- */
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --accent-color: #F42728;
+            --box-bg: #161b22;
+            --border-color: #30363d;
+            --code-bg: #0d1117;
+        }
         body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 0;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            user-select: none;
-            cursor: none;
+            line-height: 1.6;
         }
-
-        #app-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #000;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
         }
-
-        /* --- VIDEO PLAYER AREA --- */
-        #video-container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-            z-index: 1;
-        }
-
-        #video-player {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #000;
-        }
-
-        /* --- OSD (Channel Info) --- */
-        #osd-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 180px;
-            padding: 0 60px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0) 100%);
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            box-sizing: border-box;
-            opacity: 0;
-            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            z-index: 20;
-            pointer-events: none;
-        }
-
-        #ch-logo {
-            height: 90px;
-            width: 90px;
-            object-fit: contain;
-            margin-right: 30px;
-            background: #000000; 
-            border-radius: 18px;
-            padding: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .channel-info {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        #ch-number {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #888888; 
-            margin-bottom: 4px;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        #ch-name {
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.1;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-        }
-
-        #clock {
-            font-size: 1.6rem;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
-            margin-left: auto;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 8px 20px;
-            border-radius: 30px;
-            backdrop-filter: blur(4px);
-        }
-
-        /* --- GUIDE OVERLAY --- */
-        #guide-overlay {
-            position: absolute;
-            left: -480px;
-            top: 0;
-            width: 450px;
-            height: 100%;
-            background: rgba(30, 30, 30, 0.95); 
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 20px 0 50px rgba(0,0,0,0.8);
-            z-index: 30;
-            transition: transform 0.35s cubic-bezier(0.19, 1, 0.22, 1);
-            display: flex;
-            flex-direction: column;
-            transform: translateX(0);
-        }
-
-        #guide-overlay.visible {
-            transform: translateX(480px);
-        }
-
-        .guide-header {
-            padding: 40px 30px 20px 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 10px;
-            background: transparent;
-            display: flex;
-            align-items: center;
-        }
-
-        .guide-logo {
-            height: 40px;
-            width: auto;
-            object-fit: contain;
-        }
-
-        #channel-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px 15px;
-            scroll-behavior: smooth;
-        }
-
-        #channel-list::-webkit-scrollbar { display: none; }
-
-        .channel-item {
-            padding: 18px 25px;
-            margin: 5px 0;
-            font-size: 1.4rem;
-            color: rgba(255, 255, 255, 0.7);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s ease-out;
-            border: 2px solid transparent;
-        }
-
-        .channel-item span.num {
-            width: 60px;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .channel-item.focused {
-            background-color: rgba(244, 39, 40, 0.15);
-            color: #fff;
-            border-color: #F42728;
-            transform: scale(1.02);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            z-index: 2;
-        }
-
-        .channel-item.focused span.num { 
-            color: #fff; 
-        }
-
-        /* --- LOADING SPINNER --- */
-        #loading {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            display: none;
+        header {
             text-align: center;
+            margin-bottom: 60px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
         }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top-color: #F42728;
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto 15px auto;
+        header img {
+            height: 60px;
+            margin-bottom: 15px;
         }
-        
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loading-text {
-            color: rgba(255,255,255,0.7);
+        header h1 {
+            color: #fff;
+            font-weight: 800;
+            font-size: 2.5rem;
+            margin: 0;
+        }
+        header p {
+            color: #8b949e;
             font-size: 1.2rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
         }
-
-        /* --- FOOTER INSTRUCTIONS --- */
-        #footer-controls {
-            position: absolute;
-            bottom: 40px;
-            right: 50px;
-            display: flex;
-            gap: 15px;
-            z-index: 20;
-            opacity: 0.6;
-            transition: opacity 0.3s;
+        #content {
+            background: var(--box-bg);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-height: 200px;
         }
-
-        #footer-controls.faded { opacity: 0; }
-
-        .control-hint {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.1rem;
-            font-weight: 500;
-            background: rgba(0,0,0,0.7);
+        h1, h2, h3 { color: #fff; margin-top: 1.5em; margin-bottom: 0.5em; }
+        h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        a[href$=".wgt"], a[href$=".exe"], a[href$=".dmg"], a[href*="/releases/"] {
+            display: inline-block;
+            background: var(--accent-color);
+            color: #fff;
             padding: 10px 20px;
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
+            border-radius: 6px;
+            font-weight: 600;
+            text-decoration: none;
+            margin: 5px 0;
             border: 1px solid rgba(255,255,255,0.1);
         }
-
-        .key-icon {
-            background: rgba(255,255,255,0.2);
+        a[href$=".wgt"]:hover, a[href$=".exe"]:hover { transform: translateY(-2px); }
+        pre {
+            background: var(--code-bg);
+            padding: 15px;
             border-radius: 6px;
-            padding: 2px 8px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            min-width: 24px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            background: rgba(110, 118, 129, 0.4);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+        pre code { background: transparent; padding: 0; }
+        blockquote {
+            border-left: 4px solid var(--accent-color);
+            background: rgba(244, 39, 40, 0.1);
+            margin: 20px 0;
+            padding: 15px 20px;
+            color: #ff7b72;
+        }
+        img { max-width: 100%; border-radius: 8px; }
+        .loader {
+            text-align: center; color: #8b949e; font-size: 1.2rem; margin-top: 50px;
+        }
+        footer {
             text-align: center;
+            margin-top: 50px;
+            color: #484f58;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-
-    <div id="app-container">
-        
-        <div id="video-container">
-            <video id="video-player" crossorigin="anonymous" playsinline webkit-playsinline></video>
+    <div class="container">
+        <header>
+            <img src="https://webchnl.com/assets/svg/webchnl_full.svg" alt="WebChnl Logo">
+            <h1>Installation Guide</h1>
+        </header>
+        <div id="content">
+            <div class="loader">This tutorial is made for Samsung Smart TVs</div>
         </div>
-
-        <div id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text">Loading Channels</div>
-        </div>
-
-        <!-- Top Information Bar (OSD) -->
-        <div id="osd-bar">
-            <!-- Channel Logo -->
-            <img id="ch-logo" src="" alt="" onerror="this.style.opacity='0'">
-            
-            <div class="channel-info">
-                <span id="ch-number">000</span>
-                <span id="ch-name">Connecting...</span>
-            </div>
-            <div id="clock">12:00 PM</div>
-        </div>
-
-        <!-- Guide Overlay -->
-        <div id="guide-overlay">
-            <div class="guide-header">
-                <img src="https://webchnl.com/assets/svg/webchnl_full.svg" alt="WebChnl" class="guide-logo">
-            </div>
-            <div id="channel-list"></div>
-        </div>
-
-        <!-- Footer -->
-        <div id="footer-controls">
-            <div class="control-hint"><span class="key-icon">OK</span> Guide</div>
-            <div class="control-hint"><span class="key-icon">▲/▼</span> Channel</div>
-            <div class="control-hint"><span class="key-icon">↩</span> Back</div>
-        </div>
-
+        <footer>
+            2025 BNK; made with fun
+        </footer>
     </div>
-
     <script>
-        // --- CONFIG ---
-        const API_URL = "https://webchnl.com/api/channels.php";
-        let CHANNELS = [];
-        let hls = null;
-
-        // --- APP STATE ---
-        let currentIndex = 0;
-        let isGuideOpen = false;
-        let osdTimeout;
-
-        // --- DOM ELEMENTS ---
-        const els = {
-            video: document.getElementById('video-player'),
-            osd: document.getElementById('osd-bar'),
-            chNum: document.getElementById('ch-number'),
-            chName: document.getElementById('ch-name'),
-            chLogo: document.getElementById('ch-logo'),
-            guide: document.getElementById('guide-overlay'),
-            list: document.getElementById('channel-list'),
-            clock: document.getElementById('clock'),
-            loading: document.getElementById('loading'),
-            footer: document.getElementById('footer-controls')
-        };
-
-        // --- INIT ---
-        window.onload = () => {
-            initTizen();
-            fetchChannels(false);
-            updateClock();
-            setInterval(updateClock, 60000);
-            
-            // Background update every 30 seconds
-            setInterval(() => fetchChannels(true), 30000);
-        };
-
-        function initTizen() {
-            if (typeof tizen !== 'undefined') {
-                try {
-                    tizen.tvinputdevice.registerKey('10009'); // Back
-                    tizen.tvinputdevice.registerKey('ChannelUp');
-                    tizen.tvinputdevice.registerKey('ChannelDown');
-                    tizen.tvinputdevice.registerKey('MediaPlayPause');
-                } catch (e) {
-                    console.log("Not Tizen environment");
-                }
-            }
-        }
-
-        // --- DATA FETCHING ---
-        function fetchChannels(isBackground = false) {
-            if (!isBackground) els.loading.style.display = 'block';
-            
-            fetch(API_URL)
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response was not ok");
-                    return response.json();
-                })
-                .then(data => {
-                    CHANNELS = data.map((c, i) => ({
-                        id: (i + 1).toString().padStart(3, '0'),
-                        name: c.name || "Unknown Channel",
-                        logo: c.logo_url || "", 
-                        stream: c.stream_url || ""
-                    }));
-
-                    if (!isBackground) els.loading.style.display = 'none';
-                    
-                    if (CHANNELS.length > 0) {
-                        if (currentIndex >= CHANNELS.length) currentIndex = 0;
-
-                        buildGuide();
-                        
-                        if (!isBackground) {
-                            loadChannel(0); 
-                        } else {
-                            if (isGuideOpen) updateGuideFocus();
-                        }
-                    } else {
-                        if (!isBackground) els.chName.innerText = "No Channels Found";
-                    }
-                })
-                .catch(err => {
-                    console.error("Fetch Error:", err);
-                    if (!isBackground) {
-                        els.loading.innerHTML = "<div class='loading-text'>Connection Failed</div>";
-                    }
-                });
-        }
-
-        function updateClock() {
-            const now = new Date();
-            els.clock.innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }
-
-        function buildGuide() {
-            els.list.innerHTML = '';
-            CHANNELS.forEach((ch, idx) => {
-                const item = document.createElement('div');
-                item.className = 'channel-item';
-                item.innerHTML = `<span class="num">${ch.id}</span> <span class="name">${ch.name}</span>`;
-                item.dataset.index = idx;
-                els.list.appendChild(item);
+        const MARKDOWN_URL = "https://raw.githubusercontent.com/BNKdesigns/tizenchnl/main/README.md"; 
+        fetch(MARKDOWN_URL)
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load content");
+                return response.text();
+            })
+            .then(text => {
+                document.getElementById('content').innerHTML = marked.parse(text);
+            })
+            .catch(err => {
+                document.getElementById('content').innerHTML = `
+                    <div style="color: #ff7b72; text-align: center;">
+                        <h3>Error Loading Guide</h3>
+                        <p>Could not fetch the installation instructions from GitHub.</p>
+                        <p><small>${err.message}</small></p>
+                    </div>
+                `;
             });
-        }
-
-        // --- STREAMING LOGIC ---
-        function playStream(url) {
-            const video = els.video;
-
-            if (Hls.isSupported()) {
-                if (hls) {
-                    hls.destroy();
-                }
-                hls = new Hls();
-                hls.loadSource(url);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Auto-play prevented", e));
-                });
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    if (data.fatal) {
-                        switch (data.type) {
-                            case Hls.ErrorTypes.NETWORK_ERROR:
-                                hls.startLoad();
-                                break;
-                            case Hls.ErrorTypes.MEDIA_ERROR:
-                                hls.recoverMediaError();
-                                break;
-                            default:
-                                hls.destroy();
-                                break;
-                        }
-                    }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play().catch(e => console.log("Auto-play prevented", e));
-                });
-            }
-        }
-
-        // --- NAVIGATION LOGIC ---
-        function loadChannel(index) {
-            if (CHANNELS.length === 0) return;
-
-            if (index < 0) index = CHANNELS.length - 1;
-            if (index >= CHANNELS.length) index = 0;
-            
-            currentIndex = index;
-            const ch = CHANNELS[currentIndex];
-
-            if (ch.stream) {
-                playStream(ch.stream);
-            }
-
-            els.chNum.innerText = ch.id;
-            els.chName.innerText = ch.name;
-            
-            if (ch.logo) {
-                els.chLogo.src = ch.logo;
-                els.chLogo.style.opacity = '1';
-                els.chLogo.style.display = 'block';
-            } else {
-                els.chLogo.style.opacity = '0';
-                setTimeout(() => els.chLogo.style.display = 'none', 300);
-            }
-
-            showOSD();
-            if (isGuideOpen) updateGuideFocus();
-        }
-
-        function showOSD() {
-            els.osd.style.opacity = '1';
-            els.footer.classList.remove('faded');
-            clearTimeout(osdTimeout);
-            
-            osdTimeout = setTimeout(() => {
-                if (!isGuideOpen) {
-                    els.osd.style.opacity = '0';
-                    els.footer.classList.add('faded');
-                }
-            }, 5000); 
-        }
-
-        function toggleGuide() {
-            isGuideOpen = !isGuideOpen;
-            if (isGuideOpen) {
-                els.guide.classList.add('visible');
-                els.osd.style.opacity = '1'; 
-                els.footer.classList.remove('faded');
-                updateGuideFocus();
-            } else {
-                els.guide.classList.remove('visible');
-                showOSD(); 
-            }
-        }
-
-        function updateGuideFocus() {
-            document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('focused'));
-            
-            const items = els.list.children;
-            if (items[currentIndex]) {
-                const active = items[currentIndex];
-                active.classList.add('focused');
-                active.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }
-        }
-
-        // --- KEY HANDLER ---
-        document.addEventListener('keydown', (e) => {
-            const k = e.keyCode;
-            
-            // KEY MAPPINGS
-            const ARROW_UP = (k === 38 || k === 29460);
-            const ARROW_DOWN = (k === 40 || k === 29461);
-            const CH_UP = (k === 428);   // Channel Up / Next
-            const CH_DOWN = (k === 427); // Channel Down / Previous
-            const LEFT = (k === 37 || k === 4);
-            const RIGHT = (k === 39 || k === 5);
-            const ENTER = (k === 13);
-            const BACK = (k === 10009 || k === 461 || k === 8);
-
-            if (isGuideOpen) {
-                // GUIDE NAVIGATION:
-                // Up moves to previous item in list (Standard List Logic)
-                // Down moves to next item in list
-                if (ARROW_UP || CH_UP) {
-                    currentIndex--; 
-                    if (currentIndex < 0) currentIndex = CHANNELS.length - 1;
-                    updateGuideFocus();
-                } else if (ARROW_DOWN || CH_DOWN) {
-                    currentIndex++;
-                    if (currentIndex >= CHANNELS.length) currentIndex = 0;
-                    updateGuideFocus();
-                } else if (ENTER || RIGHT) {
-                    loadChannel(currentIndex);
-                    toggleGuide();
-                } else if (BACK || LEFT) {
-                    toggleGuide();
-                }
-            } else {
-                // FULLSCREEN ZAPPING (User Request):
-                // UP Button = Next Channel (Index + 1)
-                // Next Channel Button = Next Channel (Index + 1)
-                if (ARROW_UP || CH_UP) {
-                    loadChannel(currentIndex + 1); // NEXT CHANNEL
-                } 
-                // DOWN Button = Previous Channel (Index - 1)
-                // Previous Channel Button = Previous Channel (Index - 1)
-                else if (ARROW_DOWN || CH_DOWN) {
-                    loadChannel(currentIndex - 1); // PREVIOUS CHANNEL
-                } 
-                else if (ENTER || RIGHT || LEFT) {
-                    toggleGuide();
-                } 
-                else if (BACK) {
-                    try { tizen.application.getCurrentApplication().exit(); } catch(err){}
-                }
-            }
-        });
     </script>
 </body>
 </html>
